@@ -1,0 +1,3 @@
+.PHONY : motelist 
+motelist:
+	$(CONTIKI)/tools/motelist/motelist.py
