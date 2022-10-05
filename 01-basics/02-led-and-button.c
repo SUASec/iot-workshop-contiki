@@ -45,6 +45,7 @@
 
 /* This includes the user button library */
 #include "dev/button-sensor.h"
+const struct sensors_sensor button_sensor;
 
 /* And this includes the on-board LEDs */
 #include "dev/leds.h"
