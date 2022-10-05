@@ -6,5 +6,6 @@ CONTIKI_PROJECT = 01-hello-world 02-led-and-button 03-timers 04-processes \
 all: $(CONTIKI_PROJECT)
 
 ### Location of the Contiki root folder
-CONTIKI = ../../contiki
+CONTIKI = ../../../..
+
 include $(CONTIKI)/Makefile.include
