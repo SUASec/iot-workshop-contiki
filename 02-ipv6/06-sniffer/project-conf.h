@@ -53,9 +53,6 @@
 #define CC2538_RF_CONF_AUTOACK     0
 #define UART0_CONF_BAUD_RATE       460800
 
-#undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC          stub_rdc_driver
-
 #else /* Default is Z1 */
 
 /* The following are Z1 specific */
@@ -76,9 +73,6 @@
 #define LPM_CONF_MODE              0
 #undef UART0_CONF_HIGH_SPEED
 #define UART0_CONF_HIGH_SPEED      1
-
-#undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC          nullrdc_driver
 
 #endif /* CONTIKI_TARGET_ZOUL */
 

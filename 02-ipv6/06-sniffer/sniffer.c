@@ -29,7 +29,8 @@
 #include "contiki.h"
 
 #define DEBUG DEBUG_NONE
-#include "net/ip/uip-debug.h"
+#include "net/ipv6/uip-debug.h"
+#include "net/mac/nullmac/nullmac.h"
 /*---------------------------------------------------------------------------*/
 PROCESS(sniffer_process, "Sniffer process");
 AUTOSTART_PROCESSES(&sniffer_process);

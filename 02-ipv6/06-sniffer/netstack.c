@@ -37,6 +37,11 @@
  */
 #include "netstack.h"
 /*---------------------------------------------------------------------------*/
+enum netstack_ip_action
+netstack_process_ip_callback(uint8_t type, const linkaddr_t *localdest) {
+	return NETSTACK_IP_PROCESS;
+}
+
 void
 netstack_init(void)
 {
