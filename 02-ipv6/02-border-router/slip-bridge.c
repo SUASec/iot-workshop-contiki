@@ -38,16 +38,15 @@
  *         Nicolas Tsiftes <nvt@sics.se>
  */
 
-#include "net/ip/uip.h"
+#include "net/ipv6/uip.h"
 #include "net/ipv6/uip-ds6.h"
 #include "dev/slip.h"
-#include "dev/uart1.h"
 #include <string.h>
 
-#define UIP_IP_BUF        ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
+//#define UIP_IP_BUF        ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 
 #define DEBUG DEBUG_PRINT
-#include "net/ip/uip-debug.h"
+#include "net/ipv6/uip-debug.h"
 
 void set_prefix_64(uip_ipaddr_t *);
 
@@ -59,7 +58,7 @@ slip_input_callback(void)
  // PRINTF("SIN: %u\n", uip_len);
   if(uip_buf[0] == '!') {
     PRINTF("Got configuration message of type %c\n", uip_buf[1]);
-    uip_clear_buf();
+    uipbuf_clear();
     if(uip_buf[1] == 'P') {
       uip_ipaddr_t prefix;
       /* Here we set a prefix !!! */
@@ -85,7 +84,7 @@ slip_input_callback(void)
       slip_send();
       
     }
-    uip_clear_buf();
+    uipbuf_clear();
   }
   /* Save the last sender received over SLIP to avoid bouncing the
      packet back if no route is found */
@@ -95,7 +94,7 @@ slip_input_callback(void)
 static void
 init(void)
 {
-  slip_arch_init(BAUD2UBR(115200));
+  slip_arch_init();
   process_start(&slip_process, NULL);
   slip_set_input_callback(slip_input_callback);
 }
@@ -120,11 +119,11 @@ output(void)
 
 /*---------------------------------------------------------------------------*/
 #if !SLIP_BRIDGE_CONF_NO_PUTCHAR
+#define SLIP_END     0300
 #undef putchar
 int
 putchar(int c)
 {
-#define SLIP_END     0300
   static char debug_frame = 0;
 
   if(!debug_frame) {            /* Start of debug output */

@@ -38,9 +38,10 @@
 #include "contiki.h"
 #include "contiki-lib.h"
 #include "contiki-net.h"
-#include "net/ip/uip.h"
+#include "net/ipv6/uip.h"
 #include "net/ipv6/uip-ds6.h"
-#include "net/rpl/rpl.h"
+#include "net/ipv6/uip-ds6-nbr.h"
+#include "net/routing/rpl-classic/rpl.h"
 
 #include "net/netstack.h"
 #include "dev/button-sensor.h"
@@ -52,7 +53,9 @@
 #include <ctype.h>
 
 #define DEBUG DEBUG_NONE
-#include "net/ip/uip-debug.h"
+#include "net/ipv6/uip-debug.h"
+
+const struct sensors_sensor button_sensor;
 
 static uip_ipaddr_t prefix;
 static uint8_t prefix_set;
@@ -194,9 +197,9 @@ PT_THREAD(generate_routes(struct httpd_state *s))
 #endif
   ADD("Neighbors<pre>");
 
-  for(nbr = nbr_table_head(ds6_neighbors);
+  for(nbr = uip_ds6_nbr_head();
       nbr != NULL;
-      nbr = nbr_table_next(ds6_neighbors, nbr)) {
+      nbr = uip_ds6_nbr_next(nbr)) {
 
 #if WEBSERVER_CONF_NEIGHBOR_STATUS
 #if BUF_USES_STACK
@@ -342,7 +345,7 @@ request_prefix(void)
   uip_buf[1] = 'P';
   uip_len = 2;
   slip_send();
-  uip_clear_buf();
+  uipbuf_clear();
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -375,7 +378,7 @@ PROCESS_THREAD(border_router_process, ev, data)
  * Prevent that by turning the radio off until we are initialized as a DAG root.
  */
   prefix_set = 0;
-  NETSTACK_MAC.off(0);
+  NETSTACK_MAC.off();
 
   PROCESS_PAUSE();
 
@@ -400,7 +403,7 @@ PROCESS_THREAD(border_router_process, ev, data)
   /* Now turn the radio on, but disable radio duty cycling.
    * Since we are the DAG root, reception delays would constrain mesh throughbut.
    */
-  NETSTACK_MAC.off(1);
+  NETSTACK_MAC.off();
 
 #if DEBUG || 1
   print_local_addresses();
