@@ -6,7 +6,12 @@ SMALL = 1
 # Use the examples project configuration
 CFLAGS += -DPROJECT_CONF_H=\"../project-conf.h\"
 
-CONTIKI = ../../../contiki
+# Enable TCP stack
+CFLAGS += -DUIP_CONF_TCP=1
+MAKE_NET = MAKE_NET_IPV6
 
-CONTIKI_WITH_IPV6 = 1
+CONTIKI = ../../../../..
+
 include $(CONTIKI)/Makefile.include
+
+include ../../Makefile.include
