@@ -34,11 +34,11 @@
 #include "contiki.h"
 
 /* The following libraries add IP/IPv6 support */
-#include "net/ip/uip.h"
+#include "net/ipv6/uip.h"
 #include "net/ipv6/uip-ds6.h"
 
 /* This is quite handy, allows to print IPv6 related stuff in a readable way */
-#include "net/ip/uip-debug.h"
+#include "net/ipv6/uip-debug.h"
 
 /* The simple UDP library API */
 #include "simple-udp.h"
