@@ -33,9 +33,9 @@
 #include "contiki.h"
 #include "lib/random.h"
 #include "sys/ctimer.h"
-#include "net/ip/uip.h"
+#include "net/ipv6/uip.h"
 #include "net/ipv6/uip-ds6.h"
-#include "net/ip/uip-udp-packet.h"
+#include "net/ipv6/uip-udp-packet.h"
 #include "sys/ctimer.h"
 #include "../example.h"
 #include <stdio.h>
@@ -52,10 +52,11 @@
 #endif
 
 #include "dev/button-sensor.h"
+const struct sensors_sensor button_sensor;
 /*---------------------------------------------------------------------------*/
 /* Enables printing debug output from the IP/IPv6 libraries */
 #define DEBUG DEBUG_PRINT
-#include "net/ip/uip-debug.h"
+#include "net/ipv6/uip-debug.h"
 /*---------------------------------------------------------------------------*/
 /* Default is to send a packet every 60 seconds */
 #define SEND_INTERVAL		(60 * CLOCK_SECOND)
@@ -170,26 +171,26 @@ print_local_addresses(void)
 }
 /*---------------------------------------------------------------------------*/
 /* This is a hack to set ourselves the global address, use for testing */
-static void
-set_global_address(void)
-{
-  uip_ipaddr_t ipaddr;
-
-/* The choice of server address determines its 6LoWPAN header compression.
- * (Our address will be compressed Mode 3 since it is derived from our link-local address)
- * Obviously the choice made here must also be selected in udp-server.c.
- *
- * For correct Wireshark decoding using a sniffer, add the /64 prefix to the 6LowPAN protocol preferences,
- * e.g. set Context 0 to fd00::.  At present Wireshark copies Context/128 and then overwrites it.
- * (Setting Context 0 to fd00::1111:2222:3333:4444 will report a 16 bit compressed address of fd00::1111:22ff:fe33:xxxx)
- *
- * Note the IPCMV6 checksum verification depends on the correct uncompressed addresses.
- */
-
-  uip_ip6addr(&ipaddr, 0xfd00, 0, 0, 0, 0, 0, 0, 0);
-  uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
-  uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
-}
+//static void
+//set_global_address(void)
+//{
+//  uip_ipaddr_t ipaddr;
+//
+///* The choice of server address determines its 6LoWPAN header compression.
+// * (Our address will be compressed Mode 3 since it is derived from our link-local address)
+// * Obviously the choice made here must also be selected in udp-server.c.
+// *
+// * For correct Wireshark decoding using a sniffer, add the /64 prefix to the 6LowPAN protocol preferences,
+// * e.g. set Context 0 to fd00::.  At present Wireshark copies Context/128 and then overwrites it.
+// * (Setting Context 0 to fd00::1111:2222:3333:4444 will report a 16 bit compressed address of fd00::1111:22ff:fe33:xxxx)
+// *
+// * Note the IPCMV6 checksum verification depends on the correct uncompressed addresses.
+// */
+//
+//  uip_ip6addr(&ipaddr, 0xfd00, 0, 0, 0, 0, 0, 0, 0);
+//  uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
+//  uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
+//}
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
