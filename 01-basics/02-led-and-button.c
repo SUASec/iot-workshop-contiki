@@ -30,9 +30,12 @@
 /*---------------------------------------------------------------------------*/
 /**
  * \file
- *         An example showing how to use the on-board LED and user button
+ *         An example showing how to use the on-board LED and user button.
+ *         Usable for Zolertia Z1 and Zoul platforms (if/else directives either
+ *         assume Z1 or Zoul).
  * \author
  *         Antonio Lignan <alinan@zolertia.com> <antonio.lignan@gmail.com>
+ *         Tobias Tefke <t.tefke@stud.fh-sm.de>
  */
 /*---------------------------------------------------------------------------*/
 /* This is the main contiki header, it should be included always */
@@ -44,8 +47,11 @@
 #include <stdio.h>
 
 /* This includes the user button library */
+#if CONTIKI_TARGET_Z1
 #include "dev/button-sensor.h"
-const struct sensors_sensor button_sensor;
+#else
+#include "dev/button-hal.h"
+#endif
 
 /* And this includes the on-board LEDs */
 #include "dev/leds.h"
@@ -69,13 +75,30 @@ AUTOSTART_PROCESSES(&led_button_process);
  */
 PROCESS_THREAD(led_button_process, ev, data)
 {
+#if CONTIKI_TARGET_ZOUL
+  /*
+   * Zoul: define our button
+   */
+  button_hal_button_t *btn;
+#endif
+
   /* Every process start with this macro, we tell the system this is the start
    * of the thread
    */
   PROCESS_BEGIN();
 
-  /* Start the user button using the "SENSORS_ACTIVATE" macro */
+#if CONTIKI_TARGET_Z1
+  /* Start the user button using the "SENSORS_ACTIVATE" macro
+   * Zoul uses a newer hardware abstraction layer and doesn't need this.  
+   */
   SENSORS_ACTIVATE(button_sensor);
+#else
+  /*
+   * Get our button by index (we only have one, counting starts from zero).
+   */
+  btn = button_hal_get_by_index(0);
+  printf("Initialized %s\n", BUTTON_HAL_GET_DESCRIPTION(btn));
+#endif
 
   /* And now we wait for the button_sensor process to inform us about the user
    * pressing the button.  We create a loop to wait forever, but to save
@@ -85,7 +108,11 @@ PROCESS_THREAD(led_button_process, ev, data)
 
   while(1) {
     printf("Press the User Button\n");
+#if CONTIKI_TARGET_Z1
     PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+# else
+    PROCESS_WAIT_EVENT_UNTIL(ev == button_hal_press_event);
+#endif
 
     /* When the user button is pressed, we toggle the LED on/off... */
     leds_toggle(LEDS_GREEN);
