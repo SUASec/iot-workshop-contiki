@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Loughborough University - Computer Science
+ * Copyright (c) 2016, Zolertia - http://www.zolertia.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,27 +25,29 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
  */
 /**
- * \file
- *         Stub file overriding core/net/netstack.c. What we want to achieve
- *         here is call netstack_init from main without initialising the RDC,
- *         MAC and Network layers. It will just turn on the radio instead.
- *
- * \author
- *         George Oikonomou - <oikonomou@users.sourceforge.net>
+ * \author Antonio Lignan <alinan@zolertia.com>
+ *         Tobias Tefke <t.tefke@stud.fh-sm.de>
  */
-#include "netstack.h"
-/*---------------------------------------------------------------------------*/
-enum netstack_ip_action
-netstack_process_ip_callback(uint8_t type, const linkaddr_t *localdest) {
-	return NETSTACK_IP_PROCESS;
-}
 
-void
-netstack_init(void)
-{
-  NETSTACK_RADIO.init();
-  NETSTACK_RADIO.on();
-}
+#ifndef CONF_H
+#define CONF_H
 /*---------------------------------------------------------------------------*/
+/* This is the UDP port used to send and receive data */
+#define UDP_CLIENT_PORT   8765
+#define UDP_SERVER_PORT   5678
+
+/* Radio values to be configured for the 01-udp-local-multicast example
+ * EXAMPLE_CHANNEL must have the same value as the RF channel if using
+ * the sniffer. Otherwise, you are in another channel and no packets will
+ * be captured.
+ */
+#define EXAMPLE_TX_POWER  0xFF
+#define EXAMPLE_CHANNEL   26
+#define EXAMPLE_PANID     0xBEEF
+
+#define JSON_BUFFER_SIZE 64
+/*---------------------------------------------------------------------------*/
+#endif /* CONF_H */

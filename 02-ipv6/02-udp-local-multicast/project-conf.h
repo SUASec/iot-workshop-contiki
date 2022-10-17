@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Swedish Institute of Computer Science.
+ * Copyright (c) 2010, Swedish Institute of Computer Science.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,36 +25,36 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
  */
+/*---------------------------------------------------------------------------*/
+#ifndef PROJECT_CONF_H_
+#define PROJECT_CONF_H_
 
-#ifndef PROJECT_ROUTER_CONF_H_
-#define PROJECT_ROUTER_CONF_H_
+/* Comment this out to use Radio Duty Cycle (RDC) and save energy */
+#undef NETSTACK_CONF_RDC
+#define NETSTACK_CONF_RDC          nullrdc_driver
 
-#undef UIP_FALLBACK_INTERFACE
-#define UIP_FALLBACK_INTERFACE rpl_interface
+#undef IEEE802154_CONF_PANID
+#define IEEE802154_CONF_PANID      0xABCD
 
-#undef QUEUEBUF_CONF_NUM
-#define QUEUEBUF_CONF_NUM         4
+#ifndef QUEUEBUF_CONF_NUM
+#define QUEUEBUF_CONF_NUM          4
+#endif
 
 #undef UIP_CONF_BUFFER_SIZE
-#define UIP_CONF_BUFFER_SIZE    1280
+#define UIP_CONF_BUFFER_SIZE       256
 
-#undef UIP_CONF_RECEIVE_WINDOW
-#define UIP_CONF_RECEIVE_WINDOW  60
+#ifndef UIP_CONF_RECEIVE_WINDOW
+#define UIP_CONF_RECEIVE_WINDOW    60
+#endif
 
-#define SLIP_DEV_CONF_SEND_DELAY (CLOCK_SECOND / 32)
+#ifndef WEBSERVER_CONF_CFS_CONNS
+#define WEBSERVER_CONF_CFS_CONNS   2
+#endif
 
-#undef WEBSERVER_CONF_CFS_CONNS
-#define WEBSERVER_CONF_CFS_CONNS 2
+#undef CC2538_RF_CONF_CHANNEL
+#define CC2538_RF_CONF_CHANNEL     26
 
-#define SERIALIZE_ATTRIBUTES 1
-
-#define CMD_CONF_OUTPUT border_router_cmd_output
-
-#undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC border_router_rdc_driver
-
-/* used by wpcap (see /cpu/native/net/wpcap-drv.c) */
-#define SELECT_CALLBACK 1
-
-#endif /* PROJECT_ROUTER_CONF_H_ */
+/*---------------------------------------------------------------------------*/
+#endif /* PROJECT_CONF_H_ */

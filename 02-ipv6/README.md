@@ -14,7 +14,6 @@ The objective of the lessons are:
 * Learn how to send data (such as sensor readings) wirelessly
 * Create IPv6 global wireless connected networks using a Border Router
 * Learn how to create an UDP Server and client application, forwarding data over MQTT to a cloud platform
-* Create a embedded Webserver and show sensor data over a webbrowser
 * Debug a wireless application using the packet sniffer
 
 We assume you have a working Contiki development environment, if you need help configuring the toolchain and others, please visit this page:

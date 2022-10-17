@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2011, Swedish Institute of Computer Science.
  * Copyright (c) 2016, Zolertia - http://www.zolertia.com
+ * Copyright (c) 2022, Schmalkalden University of Applied Sciences
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,19 +47,15 @@
 /* Library used to read the metadata in the packets */
 #include "net/packetbuf.h"
 
-/* And we are including the example.h with the example configuration */
-#include "../example.h"
+/* And we are including the conf.h with the example configuration */
+#include "conf.h"
 
 /* Plus sensors to send data */
-#if CONTIKI_TARGET_ZOUL
 #include "dev/adc-zoul.h"
 #include "dev/zoul-sensors.h"
-#else /* Default is Z1 mote */
-#include "dev/adxl345.h"
-#include "dev/battery-sensor.h"
-#include "dev/i2cmaster.h"
-#include "dev/tmp102.h"
-#endif
+
+/* JSON library for decoding sensor data */
+#include "jsonparse.h"
 
 /* And this you should be familiar with from the basic lessons... */
 #include "sys/etimer.h"
@@ -72,9 +69,8 @@
 /* The structure used in the Simple UDP library to create an UDP connection */
 static struct simple_udp_connection mcast_connection;
 /*---------------------------------------------------------------------------*/
-/* Create a structure and pointer to store the data to be sent as payload */
-static struct my_msg_t msg;
-static struct my_msg_t *msgPtr = &msg;
+/* Create buffer for JSON */
+char json_buffer[JSON_BUFFER_SIZE];
 /*---------------------------------------------------------------------------*/
 /* Keeps account of the number of messages sent */
 static uint16_t counter = 0;
@@ -96,9 +92,6 @@ receiver(struct simple_udp_connection *c,
 {
   /* Variable used to store the retrieved radio parameters */
   radio_value_t aux;
-
-  /* Create a pointer to the received data, adjust to the expected structure */
-  struct my_msg_t *msgPtr = (struct my_msg_t *) data;
 
   leds_toggle(LEDS_GREEN);
   printf("\n***\nMessage from: ");
@@ -123,59 +116,65 @@ receiver(struct simple_udp_connection *c,
   aux = packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
   printf("LQI: %u\n", aux);
 
-  /* Print the received data */
-#if CONTIKI_TARGET_ZOUL
-  printf("ID: %u, core temp: %d.%u, ADC1: %d, ADC2: %d, ADC3: %d, batt: %u, counter: %u\n",
-          msgPtr->id, msgPtr->value1 / 1000, msgPtr->value1 % 1000,
-          msgPtr->value2, msgPtr->value3, msgPtr->value4, msgPtr->battery,
-          msgPtr->counter);
-#else
-  printf("ID: %u, temp: %u, x: %d, y: %d, z: %d, batt: %u, counter: %u\n",
-          msgPtr->id, msgPtr->value1, msgPtr->value2, msgPtr->value3,
-          msgPtr->value4, msgPtr->battery, msgPtr->counter);
-#endif
+  /* Print the received payload */
+  const char *received_payload = (const char*) data;
+  printf("Received payload: %s\n", received_payload);
+  
+  /* Setup JSON parser */
+  struct jsonparse_state json_state;
+  jsonparse_setup(&json_state, received_payload, strlen(received_payload));
+  
+  /* Store type of next JSON element */
+  int type;
+  
+  /* Variables used for storing message id and temperature */
+  int message_id = -1;
+  int temperature = -1;
+  
+  /* Parse JSON
+   * Type 0 means there are no more tokens to parse or an error occurred.
+   */
+  while ((type = jsonparse_next(&json_state)) != 0) {
+    /* Check if a pair consisting of a key and a value is present */
+    if (type == JSON_TYPE_PAIR_NAME) {
+      /* Check if a message_id was transmitted */
+      if (jsonparse_strcmp_value(&json_state, "message_id") == 0) {
+        /* If there is a field called message_id, the next field will be the value */
+        jsonparse_next(&json_state);
+        message_id = jsonparse_get_value_as_int(&json_state);
+      /* else check if a temperature was transmitted */
+      } else if (jsonparse_strcmp_value(&json_state, "temperature") == 0) {
+        /* If there is a field called temperature, the next field will be the value */
+        jsonparse_next(&json_state);
+        temperature = jsonparse_get_value_as_int(&json_state);
+      }
+    }
+  }
+  
+  printf("Transmitted values:\n");
+  printf("\tMessage ID: %d\n", message_id);
+  printf("\tTemperature: %d\n", temperature);
 }
 /*---------------------------------------------------------------------------*/
+
 static void
-take_readings(void)
+read_temperature(void)
 {
-  uint32_t aux;
+  /* Increment message counter */
   counter++;
+  
+  /* Read sensor values and store as JSON
+   * Contiki's JSON library only supports double quotes (") as of now.
+   */
+  int result;
+  result = snprintf(json_buffer, JSON_BUFFER_SIZE - 1,
+                    "{\"message_id\": %d, \"temperature\": %d}",
+                    counter, cc2538_temp_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED));
 
-  msg.id      = 0xAB;
-  msg.counter = counter;
-
-#if CONTIKI_TARGET_ZOUL
-  msg.value1  = cc2538_temp_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED);
-  msg.value2  = adc_zoul.value(ZOUL_SENSORS_ADC1);
-  msg.value3  = adc_zoul.value(ZOUL_SENSORS_ADC2);
-  msg.value4  = adc_zoul.value(ZOUL_SENSORS_ADC3);
-
-  aux = vdd3_sensor.value(CC2538_SENSORS_VALUE_TYPE_CONVERTED);
-  msg.battery = (uint16_t) aux;
-
-  /* Print the sensor data */
-  printf("ID: %u, core temp: %u.%u, ADC1: %d, ADC2: %d, ADC3: %d, batt: %u, counter: %u\n",
-          msg.id, msg.value1 / 1000, msg.value1 % 1000, msg.value2, msg.value3,
-          msg.value4, msg.battery, msg.counter);
-
-#else /* Default is Z1 */
-  msg.value1  = tmp102.value(TMP102_READ);
-  msg.value2  = adxl345.value(X_AXIS);
-  msg.value3  = adxl345.value(Y_AXIS);
-  msg.value4  = adxl345.value(Z_AXIS);
-
-  /* Convert the battery reading from ADC units to mV (powered over USB) */
-  aux = battery_sensor.value(0);
-  aux *= 5000;
-  aux /= 4095;
-  msg.battery = aux;
-
-  /* Print the sensor data */
-  printf("ID: %u, temp: %u, x: %d, y: %d, z: %d, batt: %u, counter: %u\n",
-          msg.id, msg.value1, msg.value2, msg.value3, msg.value4,
-          msg.battery, msg.counter);
-#endif
+  /* Check if JSON was stored */
+  if (result < 0) {
+    printf("An error occurred while generating the temperature message.\n");
+  }
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -186,7 +185,7 @@ print_radio_values(void)
   printf("\n* Radio parameters:\n");
 
   NETSTACK_RADIO.get_value(RADIO_PARAM_CHANNEL, &aux);
-  printf("   Channel %u", aux);
+  printf("\tChannel %u", aux);
 
   NETSTACK_RADIO.get_value(RADIO_CONST_CHANNEL_MIN, &aux);
   printf(" (Min: %u, ", aux);
@@ -195,7 +194,7 @@ print_radio_values(void)
   printf("Max: %u)\n", aux);
 
   NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &aux);
-  printf("   Tx Power %3d dBm", aux);
+  printf("\tTx Power %3d dBm", aux);
 
   NETSTACK_RADIO.get_value(RADIO_CONST_TXPOWER_MIN, &aux);
   printf(" (Min: %3d dBm, ", aux);
@@ -204,7 +203,7 @@ print_radio_values(void)
   printf("Max: %3d dBm)\n", aux);
 
   /* This value is set in contiki-conf.h and can be changed */
-  printf("   PAN ID: 0x%02X\n", IEEE802154_CONF_PANID);
+  printf("\tPAN ID: 0x%02X\n", IEEE802154_CONF_PANID);
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -224,19 +223,19 @@ PROCESS_THREAD(mcast_example_process, ev, data)
 
   PROCESS_BEGIN();
 
-  /* Alternatively if you want to change the channel or transmission power, this
+  /* Alternatively if you want to change the channel or transmission power, these
    * are the functions to use.  You can also change these values in runtime.
-   * To check what are the regular platform values, comment out the function
-   * below, so the print_radio_values() function shows the default.
+   * To check the regular platform values, comment out the function
+   * below, so the print_radio_values() function shows the default ones.
    */
   set_radio_default_parameters();
 
-  /* This blocks prints out the radio constants (minimum and maximum channel,
-   * transmission power and current PAN ID (more or less like a subnet)
+  /* This block prints out the radio constants (minimum and maximum channel,
+   * transmission power and current PAN ID (more or less like a subnet).
    */
   print_radio_values();
 
-  /* Create the UDP connection.  This function registers a UDP connection and
+  /* Create the UDP connection. This function registers a UDP connection and
    * attaches a callback function to it. The callback function will be
    * called for incoming packets. The local UDP port can be set to 0 to indicate
    * that an ephemeral UDP port should be allocated. The remote IP address can
@@ -246,13 +245,7 @@ PROCESS_THREAD(mcast_example_process, ev, data)
                       UDP_CLIENT_PORT, receiver);
 
   /* Activate the sensors */
-#if CONTIKI_TARGET_ZOUL
   adc_zoul.configure(SENSORS_HW_INIT, ZOUL_SENSORS_ADC_ALL);
-#else /* Default is Z1 */
-  SENSORS_ACTIVATE(adxl345);
-  SENSORS_ACTIVATE(tmp102);
-  SENSORS_ACTIVATE(battery_sensor);
-#endif
 
   etimer_set(&periodic_timer, SEND_INTERVAL);
 
@@ -268,11 +261,12 @@ PROCESS_THREAD(mcast_example_process, ev, data)
     uip_debug_ipaddr_print(&addr);
     printf("\n");
 
-    /* Take sensor readings and store into the message structure */
-    take_readings();
+    /* Read temperature and store as JSON */
+    read_temperature();
 
     /* Send the multicast packet to all devices */
-    simple_udp_sendto(&mcast_connection, msgPtr, sizeof(msg), &addr);
+    simple_udp_sendto(&mcast_connection, json_buffer, JSON_BUFFER_SIZE, &addr);
+    printf("Sent payload: %s\n", json_buffer);
 
     etimer_reset(&periodic_timer);
   }
