@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Zolertia - http://www.zolertia.com
+ * Copyright (c) 2022, Schmalkalden University of Applied Sciences
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,29 +25,51 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
  */
+
 /**
- * \author Antonio Lignan <alinan@zolertia.com>
- *         Tobias Tefke <t.tefke@stud.fh-sm.de>
+ * \file
+ *      Example CoAP resource
+ * \author
+ *      Tobias Tefke <t.tefke@stud.fh-sm.de>
  */
 
-#ifndef CONF_H
-#define CONF_H
-/*---------------------------------------------------------------------------*/
-/* This is the UDP port used to send and receive data */
-#define UDP_CLIENT_PORT   8765
-#define UDP_SERVER_PORT   5678
 
-/* Radio values to be configured for the 02-udp-local-multicast example
- * EXAMPLE_CHANNEL must have the same value as the RF channel if using
- * the sniffer. Otherwise, you are in another channel and no packets will
- * be captured.
- */
-#define EXAMPLE_TX_POWER  0xFF
-#define EXAMPLE_CHANNEL   26
-#define EXAMPLE_PANID     0xBEEF
+#include <string.h>
+#include <stdlib.h>
+#include "dev/leds.h"
+#include "coap-engine.h"
 
-#define JSON_BUFFER_SIZE 64
-/*---------------------------------------------------------------------------*/
-#endif /* CONF_H */
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+
+RESOURCE(res_leds,
+         "title=\"Toggle LEDs\";rt=\"Text\"",
+         res_get_handler,
+         NULL,
+         NULL,
+         NULL);
+
+static void
+res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+    char message[COAP_MAX_CHUNK_SIZE] = "";
+    
+    /* Turn LEDs on (green color) or off */
+    leds_toggle(LEDS_GREEN);
+    
+    /* Encode current LED status */
+    int result = snprintf(message, COAP_MAX_CHUNK_SIZE -1, "{\"status\": %d}", leds_get());
+    
+    if (result < 0) {
+        puts("Error while encoding message");
+    } else {
+        puts("Sending LEDs value");
+    
+        int length = strlen(message);
+        memcpy(buffer, message, length);
+        
+        coap_set_header_content_format(response, TEXT_PLAIN);
+        coap_set_header_etag(response, (uint8_t*)&length, 1);
+        coap_set_payload(response, buffer, length);
+    }
+}

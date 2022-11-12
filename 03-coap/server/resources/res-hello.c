@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2016, Zolertia - http://www.zolertia.com
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
+ *               2022, Schmalkalden University of Applied Sciences
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,29 +26,46 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
  */
+
 /**
- * \author Antonio Lignan <alinan@zolertia.com>
- *         Tobias Tefke <t.tefke@stud.fh-sm.de>
+ * \file
+ *      Example resource
+ * \author
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
+ *      Tobias Tefke <t.tefke@stud.fh-sm.de>
  */
 
-#ifndef CONF_H
-#define CONF_H
-/*---------------------------------------------------------------------------*/
-/* This is the UDP port used to send and receive data */
-#define UDP_CLIENT_PORT   8765
-#define UDP_SERVER_PORT   5678
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "coap-engine.h"
 
-/* Radio values to be configured for the 02-udp-local-multicast example
- * EXAMPLE_CHANNEL must have the same value as the RF channel if using
- * the sniffer. Otherwise, you are in another channel and no packets will
- * be captured.
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+
+/*
+ * A handler function named [resource name]_handler must be implemented for each RESOURCE.
+ * A buffer for the response payload is provided through the buffer pointer. Simple resources can ignore
+ * preferred_size and offset, but must respect the COAP_MAX_CHUNK_SIZE limit for the buffer.
+ * If a smaller block size is requested for CoAP, the REST framework automatically splits the data.
  */
-#define EXAMPLE_TX_POWER  0xFF
-#define EXAMPLE_CHANNEL   26
-#define EXAMPLE_PANID     0xBEEF
+RESOURCE(res_hello,
+         "title=\"Hello world\";rt=\"Text\"",
+         res_get_handler,
+         NULL,
+         NULL,
+         NULL);
 
-#define JSON_BUFFER_SIZE 64
-/*---------------------------------------------------------------------------*/
-#endif /* CONF_H */
+static void
+res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+    puts("Sending hello world");
+    
+    char message[COAP_MAX_CHUNK_SIZE] = "Hello World!";
+    int length = strlen(message);
+    memcpy(buffer, message, length);
+    
+    coap_set_header_content_format(response, TEXT_PLAIN);
+    coap_set_header_etag(response, (uint8_t*)&length, 1);
+    coap_set_payload(response, buffer, length);
+}

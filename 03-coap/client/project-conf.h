@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Zolertia - http://www.zolertia.com
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,28 +26,22 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
  */
+
 /**
- * \author Antonio Lignan <alinan@zolertia.com>
- *         Tobias Tefke <t.tefke@stud.fh-sm.de>
+ * \file
+ *      Erbium (Er) example project configuration.
+ * \author
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
+ *      Tobias Tefke <t.tefke@stud.fh-sm.de>
  */
 
-#ifndef CONF_H
-#define CONF_H
-/*---------------------------------------------------------------------------*/
-/* This is the UDP port used to send and receive data */
-#define UDP_CLIENT_PORT   8765
-#define UDP_SERVER_PORT   5678
+#ifndef PROJECT_CONF_H_
+#define PROJECT_CONF_H_
 
-/* Radio values to be configured for the 02-udp-local-multicast example
- * EXAMPLE_CHANNEL must have the same value as the RF channel if using
- * the sniffer. Otherwise, you are in another channel and no packets will
- * be captured.
- */
-#define EXAMPLE_TX_POWER  0xFF
-#define EXAMPLE_CHANNEL   26
-#define EXAMPLE_PANID     0xBEEF
+#include "../project-conf.common.h"
 
-#define JSON_BUFFER_SIZE 64
-/*---------------------------------------------------------------------------*/
-#endif /* CONF_H */
+#define LOG_LEVEL_APP LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
+#endif /* PROJECT_CONF_H_ */
